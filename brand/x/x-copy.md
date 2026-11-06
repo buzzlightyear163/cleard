@@ -100,7 +100,7 @@ Four gates. No exceptions.
 
 Svar 1 direkt under (101 tecken)
 ```text
-CA: [CA]
+CA: EYeyQ98xjENXG65oaPiopvmZUvEN5Ny7UviTcnS1pump
 
 This is the only $CLEARED CA. Same one on the site.
 ```
@@ -110,7 +110,7 @@ This is the only $CLEARED CA. Same one on the site.
 ```text
 $CLEARED
 
-CA: [CA]
+CA: EYeyQ98xjENXG65oaPiopvmZUvEN5Ny7UviTcnS1pump
 
 Bundled, sniped, dev-heavy or farmed by fresh wallets: the engine skips it. Scanner and live board on the site.
 
@@ -162,7 +162,7 @@ Run any CA through them:
 ```
 Svar 1: CA (101 tecken)
 ```text
-CA: [CA]
+CA: EYeyQ98xjENXG65oaPiopvmZUvEN5Ny7UviTcnS1pump
 
 This is the only $CLEARED CA. Same one on the site.
 ```
