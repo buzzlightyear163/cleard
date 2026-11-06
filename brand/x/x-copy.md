@@ -144,3 +144,46 @@ CLEARED's filter is four lines printed on the site. A launch either clears them 
 
 Next up: the engine wallet goes live, funded by creator fees. After that, a fifth gate on the roadmap for wallets funded from the same source.
 ```
+
+
+## Launch utan Premium (max 280 per inlägg)
+Bifoga brand/cleared-launch.mp4 till huvudinlägget. Postas som tråd i den här ordningen.
+
+Huvudinlägg (273 tecken)
+```text
+$CLEARED is live.
+
+The checks you run in Bubblemaps before every ape, now running on every new pump.fun launch as it lands: bundle, snipers, dev, fresh wallets.
+
+Four gates. It only buys what clears all four.
+
+Run any CA through them:
+[länk]
+```
+Svar 1: CA (101 tecken)
+```text
+CA: [CA]
+
+This is the only $CLEARED CA. Same one on the site.
+```
+Svar 2: gates (249 tecken)
+```text
+The gates, read straight from the chain:
+
+G1 Bundle: ≤3% bought in the creation block
+G2 Snipers: ≤12% in the first ~3 seconds
+G3 Dev: ≤5% held by the deployer
+G4 Fresh: ≤10% bought by wallets with under 10 txs
+
+Pass or fail. No score, no vibes.
+```
+Svar 3: vad som är live (250 tecken)
+```text
+Live on the site now:
+
+→ Scanner: paste a pump.fun CA, verdict in seconds
+→ Clearance board: every new launch as it lands
+→ Clearance cards: post any verdict to X
+
+The engine runs in paper mode for now. Creator fees fund its wallet.
+```
