@@ -784,7 +784,7 @@ const CONFIG = {
     "https://solana-rpc.publicnode.com"
   ],
   gates: { bundle: 3, snipers: 12, dev: 5, fresh: 10, sniperSlots: 8, freshTx: 10 },
-  scan: { maxPages: 4, txCap: 36, freshCheck: 14, concurrency: 3, spacingMs: 140 },
+  scan: { maxPages: 4, txCap: 36, freshCheck: 14, concurrency: 3, spacingMs: 140, minTrades: 4, minBuyers: 3 },
   board: { every: 20, minAge: 35, maxAge: 300, txCap: 24, rows: 14 },
   engine: { paperSol: 0.25 },
   fees: [
@@ -956,12 +956,14 @@ async function scanMint(mint, opt = {}){
   const meta = await namePromise;
   const base = { mint, name: meta && meta.name, symbol: meta && meta.symbol, trades: sigs.length, decimals, scannedAt: Date.now() };
   if (!full) return Object.assign(base, { outOfWindow: true });
-  const ok = sigs.filter(s => !s.err).reverse().slice(0, txCap);
-  if (!ok.length) throw Object.assign(new Error("No successful trades found for this mint yet."), { kind: "user" });
+  const okAll = sigs.filter(s => !s.err);
+  if (okAll.length < CONFIG.scan.minTrades) return Object.assign(base, { tooEarly: true, buyerCount: Math.max(0, okAll.length - 1) });
+  const ok = okAll.reverse().slice(0, txCap);
   step(2);
   const txs = (await Promise.all(ok.map(s => RPC.call("getTransaction", [s.signature, { encoding: "jsonParsed", maxSupportedTransactionVersion: 0, commitment: "confirmed" }]).catch(() => null)))).filter(Boolean);
   const early = analyzeEarly(txs, mint, supply, { sniperSlots: G.sniperSlots });
   if (!early) throw Object.assign(new Error("Couldn’t read this coin’s first trades."), { kind: "rpc" });
+  if (early.buyers.length < CONFIG.scan.minBuyers) return Object.assign(base, { tooEarly: true, buyerCount: early.buyers.length });
   step(3);
   let devHold = early.devBuyPct;
   const devAcc = early.dev ? RPC.call("getTokenAccountsByOwner", [early.dev, { mint }, { encoding: "jsonParsed", commitment: "confirmed" }]).catch(() => null) : null;
@@ -1551,19 +1553,22 @@ async function sampler(){
   if (LIVE.mode !== "live" || LIVE.busy || document.hidden || SCAN.busy) return;
   const now = Date.now();
   LIVE.launches.forEach(L => { if (L.status === "queued" && now - L.t > CONFIG.board.maxAge * 1000) L.status = "unsampled"; });
-  const L = LIVE.launches.find(L => L.status === "queued" && now - L.t > CONFIG.board.minAge * 1000);
-  if (!L) return;
-  LIVE.busy = true; L.status = "scanning"; renderBoard();
-  try {
-    const res = await scanMint(L.mint, { txCap: CONFIG.board.txCap });
-    if (res.outOfWindow){ L.status = "unsampled"; }
-    else {
+  LIVE.busy = true;
+  for (let tries = 0; tries < 3; tries++){
+    const L = LIVE.launches.find(L => L.status === "queued" && now - L.t > CONFIG.board.minAge * 1000);
+    if (!L) break;
+    L.status = "scanning"; renderBoard();
+    try {
+      const res = await scanMint(L.mint, { txCap: CONFIG.board.txCap });
+      if (res.outOfWindow){ L.status = "unsampled"; break; }
+      if (res.tooEarly){ L.status = "quiet"; renderBoard(); continue; }
       res.label = L.symbol ? "$" + L.symbol : res.label; res.subject.name = res.label;
       L.res = res; L.status = res.judge.cleared ? "cleared" : "held";
       LIVE.full++; if (res.judge.cleared) LIVE.cleared++;
       LIVE.results.unshift(res); if (LIVE.results.length > 20) LIVE.results.length = 20;
-    }
-  } catch (e){ L.status = "unsampled"; L.err = e && e.kind; }
+    } catch (e){ L.status = "unsampled"; L.err = e && e.kind; }
+    break;
+  }
   LIVE.busy = false; renderBoard();
 }
 // Preview: honest, labelled simulation when the live stream can't be reached
@@ -1614,10 +1619,10 @@ function renderBoard(isNew){
       r.append(el("span", "gcell " + cls, v));
     });
     const dots = el("span", "dots"); GATES.forEach((g, k) => { const known = m || (k === 2 && L.devPct != null); const ok = m ? pass[k] : L.devPct <= CONFIG.gates.dev; dots.append(el("i", known ? (ok ? "p" : "f") : "")); }); r.append(dots);
-    const pill = { g3: ["pill hold", "Held · G3"], queued: ["pill dim", "Queued"], scanning: ["pill scan", "Scanning"], cleared: ["pill clear", "Cleared"], held: ["pill hold", "Held · " + (L.res ? L.res.judge.failed : "") + "/4"], unsampled: ["pill dim", "G3 ✓ · unsampled"] }[L.status];
+    const pill = { g3: ["pill hold", "Held · G3"], queued: ["pill dim", "Queued"], scanning: ["pill scan", "Scanning"], cleared: ["pill clear", "Cleared"], held: ["pill hold", "Held · " + (L.res ? L.res.judge.failed : "") + "/4"], unsampled: ["pill dim", "G3 ✓ · unsampled"], quiet: ["pill dim", "Quiet · no buyers"] }[L.status];
     const vc = el("span"); vc.append(el("span", pill[0], pill[1])); r.append(vc);
-    r.append(el("span", "eng" + (L.status === "cleared" ? " buy" : ""), L.status === "cleared" ? `Paper buy · ${CONFIG.engine.paperSol} SOL` : L.status === "g3" || L.status === "held" ? "Skip" : "—"));
-    if (L.real) r.addEventListener("click", () => { $("scan-in").value = L.mint; $("scanner").scrollIntoView({ behavior: reduce ? "auto" : "smooth" }); if (L.res) showResult(L.res); else runScan(L.mint); });
+    r.append(el("span", "eng" + (L.status === "cleared" ? " buy" : ""), L.status === "cleared" ? `Paper buy · ${CONFIG.engine.paperSol} SOL` : L.status === "g3" || L.status === "held" || L.status === "quiet" ? "Skip" : "—"));
+    if (L.real) r.addEventListener("click", () => { $("scan-in").value = L.mint; $("scanner").scrollIntoView({ behavior: reduce ? "auto" : "smooth" }); if (L.res && !L.res.sim) showResult(L.res); else runScan(L.mint); });
     body.append(r);
   });
 }
@@ -1674,6 +1679,12 @@ function showResult(res){
     const pill = $("scan-pill"); pill.className = "pill out"; pill.textContent = "Out of window";
     SCN.set(SCN.subj || EX.heroC, performance.now(), "reveal"); return;
   }
+  if (res.tooEarly){
+    setSteps(99); $("scan-err").hidden = false;
+    $("scan-err").textContent = `${res.symbol ? "$" + res.symbol : short(res.mint)} has ${res.buyerCount === 1 ? "1 buyer" : res.buyerCount + " buyers"} so far. CLEARED waits for at least ${CONFIG.scan.minBuyers} before it judges a launch, so a dead launch never clears by default.`;
+    const pill = $("scan-pill"); pill.className = "pill out"; pill.textContent = "Too early";
+    SCN.set(SCN.subj || EX.heroC, performance.now(), "reveal"); return;
+  }
   fillResults(res); setSteps(99);
   SCN.set(res.subject, performance.now(), "reveal");
 }
@@ -1690,7 +1701,7 @@ async function runScan(mint){
   } catch (e){
     setSteps(-1); $("scan-err").hidden = false; $("scan-err").textContent = scanErrorText(e);
     if (SCN.subj) SCN.set(SCN.subj, performance.now(), "reveal");
-    if (SCAN.res && !SCAN.res.outOfWindow) fillResults(SCAN.res); else { pill.className = "pill dim"; pill.textContent = "No result"; }
+    if (SCAN.res && SCAN.res.subject) fillResults(SCAN.res); else { pill.className = "pill dim"; pill.textContent = "No result"; }
   }
   SCAN.busy = false; $("scan-go").disabled = false; $("scan-go").textContent = "Scan";
 }
@@ -1701,7 +1712,7 @@ $("scan-in").addEventListener("paste", () => setTimeout(() => { const v = $("sca
 /* ===== Card ===== */
 if (inFrame) $("card-dl").hidden = true;
 $("card-btn").addEventListener("click", () => {
-  const res = SCAN.res && !SCAN.res.outOfWindow ? SCAN.res : { subject: EX.heroC, label: "Sample C", live: false };
+  const res = SCAN.res && SCAN.res.subject ? SCAN.res : { subject: EX.heroC, label: "Sample C", live: false };
   const url = makeCard(res);
   $("card-img").src = url; $("card-dl").href = url; $("card-dl").download = `cleared-${(res.label || "card").replace(/[^a-z0-9]/gi, "").toLowerCase()}.png`;
   $("modal").hidden = false; $("modal-close").focus();
@@ -1716,7 +1727,7 @@ function copyText(text, btn, fallbackEl){
   try { navigator.clipboard.writeText(text).then(done, select); } catch (e){ select(); }
 }
 $("card-copy").addEventListener("click", e => {
-  const res = SCAN.res && !SCAN.res.outOfWindow ? SCAN.res : { subject: EX.heroC, label: "Sample C" }, s = res.subject;
+  const res = SCAN.res && SCAN.res.subject ? SCAN.res : { subject: EX.heroC, label: "Sample C" }, s = res.subject;
   const lines = GATES.map((g, k) => `G${k + 1} ${g.short} ${pct(s.metrics[g.key])} ${s.judge.pass[k] ? "✓" : "✗"}`).join("\n");
   copyText(`${res.label} through the CLEARED gates:\n${lines}\nVerdict: ${s.judge.cleared ? "CLEARED" : "HELD"}${res.mint ? "\n\n" + res.mint : ""}\n\nOnly buys launches that clear. $CLEARED`, e.currentTarget, $("results"));
 });
@@ -1743,7 +1754,7 @@ $("card-copy").addEventListener("click", e => {
     cols.append(c);
   });
   $("lane-buy").textContent = `Engine buys · ${CONFIG.engine.paperSol} SOL (paper until launch)`;
-  $("faq-gates").textContent = `G1 adds up what other wallets bought in the same block the coin was created in (line: ${lim(0)}%). G2 adds up buys in the next ${CONFIG.gates.sniperSlots} slots, about three seconds (${lim(1)}%). G3 is what the deployer wallet holds (${lim(2)}%). G4 checks the biggest early buyers and adds up what was bought by wallets with fewer than ${CONFIG.gates.freshTx} transactions ever (${lim(3)}%). All four are shares of total supply.`;
+  $("faq-gates").textContent = `G1 adds up what other wallets bought in the same block the coin was created in (line: ${lim(0)}%). G2 adds up buys in the next ${CONFIG.gates.sniperSlots} slots, about three seconds (${lim(1)}%). G3 is what the deployer wallet holds (${lim(2)}%). G4 checks the biggest early buyers and adds up what was bought by wallets with fewer than ${CONFIG.gates.freshTx} transactions ever (${lim(3)}%). All four are shares of total supply. A launch needs at least ${CONFIG.scan.minBuyers} buyers before it is judged at all, so a dead launch never clears by default.`;
 })();
 
 /* ===== Config wiring ===== */

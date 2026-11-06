@@ -36,6 +36,7 @@ Landningssida och fungerande verktyg för $CLEARED. En enda fil (`index.html`) m
    - X-förhandsvisningen med og.jpg (klistra in länken i en tweet-draft)
 
 ## Ärliga begränsningar
+- En launch måste ha minst 3 köpare innan den bedöms (`CONFIG.scan.minBuyers`). Annars visas "Too early" i skannern och "Quiet" på tavlan, så att döda launches aldrig får CLEARED.
 - Coins med fler än cirka 4 000 trades visas som "Out of window": skannern kan inte bläddra tillbaka till block 0 från en webbläsare.
 - Publik RPC kan rate-limita vid hög trafik. Lös det med en egen RPC-URL i `CONFIG.rpc`.
 - G4 fångar inte en dev som köper med gamla wallets. Det står i FAQ:n, och "funding source" som femte gate finns på roadmappen.
