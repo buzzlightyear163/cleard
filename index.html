@@ -581,7 +581,7 @@ footer{padding-block:clamp(120px,15vw,210px) 40px;scroll-margin-top:72px}
         <div class="b-row b-th" role="row"><span>Time</span><span>Coin</span><span class="gcell">G1 Bundle</span><span class="gcell">G2 Snipers</span><span class="gcell">G3 Dev</span><span class="gcell">G4 Fresh</span><span class="dots-h"></span><span>Verdict</span><span class="eng">Engine</span></div>
         <div id="b-body"><div class="b-empty">Waiting for the first launch…</div></div>
       </div>
-      <p class="note" id="board-note">The engine runs in paper mode until launch. “Paper buy” marks a launch it would have bought. Click any real row to open it in the scanner.</p>
+      <p class="note" id="board-note">The engine runs in paper mode until its wallet goes live. “Paper buy” marks a launch it would have bought. Click any real row to open it in the scanner.</p>
     </div>
   </section>
 
@@ -629,7 +629,7 @@ footer{padding-block:clamp(120px,15vw,210px) 40px;scroll-margin-top:72px}
         <details><summary>What exactly does each gate measure?</summary><p id="faq-gates">G1 adds up what other wallets bought in the same block the coin was created in. G2 adds up buys in the next 8 slots, about three seconds. G3 is what the deployer wallet holds. G4 checks the biggest early buyers and adds up what was bought by wallets with fewer than 10 transactions ever. All four are a share of total supply.</p></details>
         <details><summary>Where does the data come from?</summary><p>New launches come from the public pump.fun stream on PumpPortal. Scans read the coin’s first transactions from a public Solana RPC node, straight from your browser. We run no server in between, and nothing you paste is stored.</p></details>
         <details><summary>Why can’t it scan older coins?</summary><p>To reach the creation block, the scanner has to page back through every trade. Past about 4,000 trades that is too slow for a browser, so it says “Out of window” instead of guessing. CLEARED is built to judge launches in their first minutes anyway.</p></details>
-        <details><summary>Does the engine buy right now?</summary><p>Not yet. Until launch it runs in paper mode: the board shows what it would have bought. At launch the engine wallet goes live, funded by creator fees, and is published here so anyone can follow every buy.</p></details>
+        <details><summary>Does the engine buy right now?</summary><p>Not yet. It runs in paper mode: the board shows what it would have bought. Next on the roadmap, the engine wallet goes live, funded by creator fees, and gets published here so anyone can follow every buy.</p></details>
         <details><summary>Can a dev get past the gates?</summary><p>Some can. A dev who spreads buys across old wallets over a minute won’t trip G1 or G4. That is why a fifth gate, wallets funded from the same source, is next on the roadmap. The gates raise the cost of a rigged launch; they don’t make it impossible.</p></details>
         <details><summary>Will CLEARED DM me?</summary><p>Never. There is no presale, no airdrop and no support account. Anyone messaging you as CLEARED is not us.</p></details>
       </div>
@@ -1513,7 +1513,7 @@ function setMode(m){
   $("in-mode").textContent = m === "live" ? "Live intake" : m === "preview" ? "Preview feed" : "Connecting";
   $("board-note").textContent = m === "preview"
     ? "Preview: the live pump.fun stream isn’t reachable from here, so this board is showing simulated launches (marked SIM). On the deployed site it reads real launches."
-    : "The engine runs in paper mode until launch. “Paper buy” marks a launch it would have bought. Click any real row to open it in the scanner.";
+    : "The engine runs in paper mode until its wallet goes live. “Paper buy” marks a launch it would have bought. Click any real row to open it in the scanner.";
 }
 function connect(){
   let ws;
@@ -1753,7 +1753,7 @@ $("card-copy").addEventListener("click", e => {
     c.append(el("span", "label", `G${k + 1} · ${g.name}`), el("b", null, "≤ " + lim(k) + "%"), el("small", null, g.rule), el("p", null, g.why), el("span", "pill dim", "Waiting"));
     cols.append(c);
   });
-  $("lane-buy").textContent = `Engine buys · ${CONFIG.engine.paperSol} SOL (paper until launch)`;
+  $("lane-buy").textContent = `Engine buys · ${CONFIG.engine.paperSol} SOL (paper mode for now)`;
   $("faq-gates").textContent = `G1 adds up what other wallets bought in the same block the coin was created in (line: ${lim(0)}%). G2 adds up buys in the next ${CONFIG.gates.sniperSlots} slots, about three seconds (${lim(1)}%). G3 is what the deployer wallet holds (${lim(2)}%). G4 checks the biggest early buyers and adds up what was bought by wallets with fewer than ${CONFIG.gates.freshTx} transactions ever (${lim(3)}%). All four are shares of total supply. A launch needs at least ${CONFIG.scan.minBuyers} buyers before it is judged at all, so a dead launch never clears by default.`;
 })();
 

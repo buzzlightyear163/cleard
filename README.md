@@ -11,7 +11,7 @@ Landningssida och fungerande verktyg för $CLEARED. En enda fil (`index.html`) m
 - **Clearance board** (sektion 04): live-ström av nya pump.fun-launches via PumpPortal (gratis, ingen nyckel). G3 läses direkt från create-eventet. Var 20:e sekund får en launch full skanning i besökarens webbläsare.
 - **Clearance card**: delningsbild (1200×675) med klustret och gate-resultaten, plus "Copy text".
 - Om live-strömmen inte går att nå visar tavlan en tydligt märkt simulering (SIM / Preview). Simulerad data visas aldrig som riktig.
-- Motorns köp är **paper mode** fram till launch, och det står på sidan.
+- Motorns köp är **paper mode** tills motorns wallet går live (ligger under "Next" på roadmapen), och det står på sidan.
 
 ## Fyll i vid launch (överst i scriptet, `CONFIG`)
 | Fält | Vad |
